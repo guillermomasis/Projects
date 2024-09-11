@@ -1,0 +1,319 @@
+---
+title: "Analisis predictivo de cancer de pulmon"
+author: "Jose Guillermo Masis Portuguez"
+date: "2024-06-09"
+
+output: 
+  html_document:
+    toc: true # tabla de contenidos
+    toc_float: true # alternativa a usar "true" es usar "yes", genera el mismo resultado
+    theme: cerulean # Tema de presentación del HTML
+    toc_depth: 3 # numeros de desagregaciones (cantidad de signos #)
+    number_sections: true #Agregar numeros de forma automatica (Cuando no se ponen)
+    code_folding: hide # codigo para ocultar los chunks de los HTML
+    highlight: haddock # formato de presentación del HTML
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Analisis predictivo de cancer de pulmon 
+**En este proyecto se hara un analisis estadistico del cancer de pulmón**
+**El cancer de pulmon es uno de los cancer mas agresivos y la tasa de supervivencia es menor a la de otros tipos de cancer, en este analisis estadistico nos enfocaremos en algunos de los factores mas ingfluyentes para contraer cancer.**
+<br>
+**En el presente proyecto nos enfocaremos en algunos de los factores mas influyentes para la predicción del cancer , entre ellos destacamos : La edad, el genero , la historia de fumado , el tratamiento , la etnia y el historial en la familia **
+
+
+![](cancerpulmon.jpg){width=100%} 
+
+
+
+
+## Procesamiento y limpieza de datos
+<br>
+**En esta parte cargamos los datos, revisamos las primeras 6 filas para ver los valores que nos sirven **
+
+
+```{r}
+#PROYECTO FINAL JOSE GUILLERMO MASIS 
+setwd("C:/Users/guill/Desktop/Universidad/UNA/1 Semestre 2024/BigData/Proyecto final")
+library(dplyr)
+library(readxl)
+library(tidyr)
+library(ggplot2)
+
+#Quitamos columnas que no nos sirven usando select y creamos una nueva variable con los valores seleccionados
+Cancer<-data.frame(read.csv("lung_cancer_data.csv"))
+head(Cancer,n=6)
+```
+<br>
+**Luego de eso seleccionamos las columnas que nos podrian ayudar a predecir de mejor manera el cancer de pulmon y creamos una nueva variable Cancer1 con esos nuevos variables , a la cual le sacamos una muestra de las 100 primeras filas**
+
+```{r}
+Cancer1<-select(Cancer,1:5,8:10,12)
+Cancer1<-Cancer1[1:100,]
+
+
+head(Cancer1,n=6)
+```
+<br>
+**Los datos estan en ingles , los cambiamos a espanol usando las funciones: **
+<br>
+**rename para cambiar el nombre de las columnas**
+<br>
+**gsub para cambiar algunos datos dentro de las columnas a espanol**
+<br>
+**round para redondear a dos digitos el tamano del tumor**
+<br>
+**creamos la variable Cancer2 para alojar la nueva informacion**
+
+```{r}
+#Los datos estan en ingles por lo que cambiamos algunos titulos y observaciones
+Cancer2<-rename(Cancer1,Id_Paciente=Patient_ID,Edad=Age,Genero=Gender,Historia_fumado=Smoking_History,Tam_tumor_mm=Tumor_Size_mm, Tratamiento=Treatment, Meses_sobrevivencia=Survival_Months, Etnia=Ethnicity, Historia_familiar=Family_History)
+
+#Editar genero
+Cancer2$Genero<-gsub("Male","Hombre",Cancer2$Genero)
+Cancer2$Genero<-gsub("Female","Mujer",Cancer2$Genero)
+#Editar Historia fumado
+Cancer2$Historia_fumado<-gsub("Current Smoker","Fumador",Cancer2$Historia_fumado)
+Cancer2$Historia_fumado<-gsub("Never Smoked","Nunca fumo",Cancer2$Historia_fumado)
+Cancer2$Historia_fumado<-gsub("Former Smoker","Ex fumador",Cancer2$Historia_fumado)
+
+
+#Editar tratamiento
+Cancer2$Tratamiento<-gsub("Surgery","Cirugia",Cancer2$Tratamiento)
+Cancer2$Tratamiento<-gsub("Radiation Therapy","Radioterapia",Cancer2$Tratamiento)
+Cancer2$Tratamiento<-gsub("Chemotherapy","Quimioterapia",Cancer2$Tratamiento)
+Cancer2$Tratamiento<-gsub("Targeted Therapy","Terapia dirigida",Cancer2$Tratamiento)
+
+#Editar etnia
+Cancer2$Etnia<-gsub("Hispanic","Hispano",Cancer2$Etnia)
+Cancer2$Etnia<-gsub("Caucasian","Blanco",Cancer2$Etnia)
+Cancer2$Etnia<-gsub("African American","Afroamericano",Cancer2$Etnia)
+Cancer2$Etnia<-gsub("Asian","Asiatico",Cancer2$Etnia)
+Cancer2$Etnia<-gsub("Other","Otro",Cancer2$Etnia)
+
+#Editar Historia_familiar
+Cancer2$Historia_familiar<-gsub("Yes","Si",Cancer2$Historia_familiar)
+
+
+#Redondear tamano del tumor 
+Cancer2$Tam_tumor_mm<-round(Cancer2$Tam_tumor_mm,2)
+
+
+head(Cancer2)
+```
+<br>
+**Creamos la variable Cancer2 para alojar la nueva informacion, por otro lado reviso que la columna edad sea de tipo entero**
+```{r}
+
+class(Cancer2$Edad)
+```
+## Visualizacion de datos 
+### Relacion entre edad y tamano de los tumores por etnia
+
+**En este caso nos enfocamos en las distintas etnias presentes en el estudio (sin contemplar la etnia que aparece como "Otros") **
+**Afroamericanos , hispanos , asiaticos y blancos**
+
+```{r}
+datAfroamericano <- Cancer2%>% filter(Etnia=="Afroamericano") 
+
+g01 <-ggplot(data = datAfroamericano, aes(y=Tam_tumor_mm, x=Edad)) + 
+  geom_point(size=2) + 
+  ggtitle("Relacion entre Edad y Tamano de los tumores por historia de fumado/ afroamericanos") + geom_smooth(method='lm')
+g01
+
+
+datHispano <- Cancer2%>% filter(Etnia=="Hispano")
+
+g02 <-ggplot(data = datHispano, aes(y=Tam_tumor_mm, x=Edad)) + 
+  geom_point(size=2) + 
+  ggtitle("Relacion entre Edad y Tamano de los tumores por historia de fumado/ hispanos") + geom_smooth(method='lm')
+g02
+
+
+datAAsiatico <- Cancer2%>% filter(Etnia=="Asiatico")
+
+g03 <-ggplot(data = datAAsiatico, aes(y=Tam_tumor_mm, x=Edad)) + 
+  geom_point(size=2) + 
+  ggtitle("Relacion entre Edad y Tamano de los tumores por historia de fumado/ asiaticos") + geom_smooth(method='lm')
+g03
+
+
+datABlanco <- Cancer2%>% filter(Etnia=="Blanco")  
+
+g04 <-ggplot(data = datABlanco, aes(y=Tam_tumor_mm, x=Edad)) + 
+  geom_point(size=2) + 
+  ggtitle("Relacion entre Edad y Tamano de los tumores por historia de fumado/ blancos") + geom_smooth(method='lm')
+g04
+
+
+```
+
+### Cantidad de personas con cancer por etnia 
+
+
+```{r}
+
+ggplot(Cancer2, aes(Cancer2$Etnia, fill=Cancer2$Etnia)) + geom_bar()
+
+
+```
+
+### Cantidad de personas con cancer por historia de fumado
+
+
+
+```{r}
+ggplot(Cancer2, aes(Cancer2$Historia_fumado, fill=Cancer2$Historia_fumado)) + geom_bar()
+
+```
+
+### Cantidad de personas con cancer por historia familiar 
+
+
+```{r}
+ggplot(Cancer2, aes(Cancer2$Historia_familiar, fill=Cancer2$Historia_familiar)) + geom_bar()
+```
+
+
+###  Meses sobrevivencia/ Tamano de tumor por Etnia
+
+```{r}
+ggplot(data=Cancer2, aes( 
+                      Meses_sobrevivencia, Tam_tumor_mm ,
+                      fill=Etnia)) + 
+  stat_smooth() + # líneas y bandas de suavizado (smooth)
+  facet_wrap(~ Etnia)
+
+```
+
+### Meses de sobrevivencia/Tamano tumor por genero 
+
+
+```{r}
+ggplot(data=Cancer2, aes( 
+                      Meses_sobrevivencia, Tam_tumor_mm ,
+                      fill=Genero)) + 
+  stat_smooth() + # líneas y bandas de suavizado (smooth)
+  facet_wrap(~ Genero)
+
+```
+
+
+## Funciones y resumen
+### Calcular promedio edad
+
+```{r}
+
+promedio_Edad<- function(v){ 
+
+  promedio <- sum(v) / length(v)
+  
+  return(promedio )
+   
+}
+promedio_Edad(Cancer2$Edad)
+
+```
+### pipe para calcular promedio edad agrupado por etnia
+
+```{r}
+#pipe promedio edad por etnia
+Edad_etnia<-Cancer2 %>% 
+    group_by(Etnia=Cancer2$Etnia) %>% 
+    summarise(Promedio=mean(Edad))
+
+Edad_etnia
+
+```
+
+
+
+
+### funcion para calcular promedio tamano tumor
+
+
+```{r}
+promedio_tam_tum<- function(v){ 
+
+  promedio <- sum(v) / length(v)
+  
+  return(promedio )
+   
+}
+
+promedio_tam_tum(Cancer2$Tam_tumor_mm)
+
+```
+
+
+### pipe para calcular promedio tamano tumor agrupado por
+
+```{r}
+
+tam_tum_etnia<-Cancer2 %>% 
+    group_by(Etnia=Cancer2$Etnia) %>% 
+    summarise(Promedio=mean(Tam_tumor_mm))
+
+tam_tum_etnia
+
+```
+
+### pipes para contar el numero de personas por cada etnia , por cada historia de fumado y por historia familiar 
+
+
+```{r}
+
+count_Etn<-Cancer2 %>% count(Etnia)
+count_fuma<-Cancer2 %>% count(Historia_fumado)
+count_familia<-Cancer2 %>% count(Historia_familiar)
+
+count_Etn 
+count_fuma 
+count_familia 
+
+```
+
+## Regresion
+<br>
+**En este apartado nos enfocamos a hacer un analisis de regresion multiple , considerando dos factores para predecir los meses de sobrevivencia **
+<br>
+**Utilizamos dos librerias nuevas , lattice y car (enfocadas a modelos de regresion) **
+
+```{r}
+library(lattice)
+library(car)
+tam_mes<-xyplot(Cancer2$Meses_sobrevivencia~Cancer2$Tam_tumor_mm,type=c("p","r"))
+tam_mes
+tam_edad<-xyplot(Cancer2$Meses_sobrevivencia~Cancer2$Edad,type=c("p","r"))
+tam_edad
+
+scatterplot(Cancer2$Meses_sobrevivencia~Cancer2$Tam_tumor_mm)
+scatterplot(Cancer2$Meses_sobrevivencia~Cancer2$Edad)
+```
+<br>
+**----------------------------------------------------------------------------------------------------------------**
+<br>
+**Calculamos coeficiente de correlacion de Pearson y utilizamos la funcion lm para calcular el intercepto, betas  **
+<br>
+```{r}
+Y=Cancer2$Meses_sobrevivencia
+X=cbind(Cancer2$Tam_tumor_mm,Cancer2$Edad)
+R=cor(X,Y)
+R
+R<-round(R,2)
+R
+ 
+mod=lm(Cancer2$Meses_sobrevivencia~Cancer2$Tam_tumor_mm+Cancer2$Edad)
+mod
+
+    
+```
+<br>
+**El modelo de regresión lineal quedaría así **
+**Intercepto , beta 1 y beta 2**
+![](intBetas.png){width=100%} 
+<br>
+**Evaluamos los betas en la formula de regresion multiple**
+![](lmFinal.png){width=100%} 
